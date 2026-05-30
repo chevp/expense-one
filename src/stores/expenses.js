@@ -7,7 +7,6 @@ import {
   doc,
   query,
   where,
-  orderBy,
   onSnapshot,
   serverTimestamp,
 } from 'firebase/firestore'
@@ -26,6 +25,7 @@ export const CATEGORIES = [
 export const useExpensesStore = defineStore('expenses', () => {
   const items = ref([])
   const loading = ref(false)
+  const error = ref('')
   let unsubscribe = null
 
   const total = computed(() =>
@@ -41,19 +41,33 @@ export const useExpensesStore = defineStore('expenses', () => {
   })
 
   // Live subscription to the current user's expenses, newest first.
+  // We sort client-side instead of with orderBy() so the query needs only a
+  // single-field equality — no Firestore composite index required.
   function subscribe() {
     const auth = useAuthStore()
     if (!auth.user) return
     loading.value = true
+    error.value = ''
     const q = query(
       collection(db, 'expenses'),
       where('userId', '==', auth.user.uid),
-      orderBy('date', 'desc'),
     )
-    unsubscribe = onSnapshot(q, (snap) => {
-      items.value = snap.docs.map((d) => ({ id: d.id, ...d.data() }))
-      loading.value = false
-    })
+    unsubscribe = onSnapshot(
+      q,
+      (snap) => {
+        items.value = snap.docs
+          .map((d) => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+        loading.value = false
+      },
+      (err) => {
+        // Surface failures (missing index, denied rules, …) instead of
+        // leaving the list silently stuck on "loading".
+        error.value = err.message
+        loading.value = false
+        console.error('[expenses] snapshot error:', err)
+      },
+    )
   }
 
   function unsubscribeAll() {
@@ -95,6 +109,7 @@ export const useExpensesStore = defineStore('expenses', () => {
   return {
     items,
     loading,
+    error,
     total,
     byCategory,
     subscribe,

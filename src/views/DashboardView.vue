@@ -41,7 +41,10 @@ onUnmounted(() => store.unsubscribeAll())
         Letzte Spesen
       </div>
 
-      <p v-if="store.loading" class="px-4 py-6 text-sm text-slate-400">
+      <p v-if="store.error" class="px-4 py-6 text-sm text-red-600">
+        Fehler beim Laden: {{ store.error }}
+      </p>
+      <p v-else-if="store.loading" class="px-4 py-6 text-sm text-slate-400">
         Lädt…
       </p>
       <ul v-else-if="store.items.length">

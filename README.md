@@ -53,10 +53,10 @@ npm run dev
    firebase deploy --only firestore:rules,storage
    ```
 
-> **Composite Index:** Das Dashboard fragt `where('userId','==',…)` kombiniert
-> mit `orderBy('date','desc')` ab. Firestore verlangt dafür beim ersten Aufruf
-> einen zusammengesetzten Index — der Konsolen-Fehler enthält einen Direktlink
-> zum Anlegen.
+> **Kein Composite Index nötig:** Das Dashboard fragt nur
+> `where('userId','==',…)` ab und sortiert clientseitig nach Datum. Dadurch
+> genügt der automatische Single-Field-Index — ein zusammengesetzter Index
+> ist nicht erforderlich.
 
 ## Deploy
 
